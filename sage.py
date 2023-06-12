@@ -20,7 +20,7 @@ def sage(params, planet_pixel_size,
     
     
     '''
-    This function calculates the stellar contamination using a pixellation grid approach. 
+    This function calculates the stellar contamination using a pixellation grid approach as presented in chakraborty et al. (in prep). 
     
     input: orbital parameters [params], planet pixel size [15-50], wavelength of input model spectrum, 
     flux_hot and flux_cold is flux model of clear and active photospheres, 
@@ -56,8 +56,7 @@ def sage(params, planet_pixel_size,
     
     
     # Define input parameters:
-    phaseoff    = params[0]
-    print(phaseoff)             	
+    phaseoff    = params[0]             	
     radiusratio = params[1]				
     incl        = params[2]			
     semimajor   = params[3]		
@@ -202,7 +201,7 @@ def sage(params, planet_pixel_size,
                 
                 # Adding stellar inclination effects
                 spot_inCart= np.array([[spx], [spy], [spz]])
-                spx, spy, spz= stellar_inc(stellar_inclination= (90 - inc_star)*u.deg, active_cord=spot_inCart)
+                spx, spy, spz= stellar_inc(stellar_inclination= (90 - inc_star)*u.deg, active_cord=spot_inCart) # the new stellar inclination part
 
 
                 # Converting rotated Cartesian pixels back to GCS. 
@@ -257,7 +256,6 @@ def sage(params, planet_pixel_size,
                                                                                                             int(n)/2).astype(int)] * (ve/ c)
 
         # Define values for spot:
-
         #spot[xspot_p1[star_mask & inspot_mask].astype(int) + int(n)/2, yspot_p1[star_mask & inspot_mask].astype(int) + int(n)/2] = spotflux[sn]
                 mu_spot = np.cos(np.arcsin(r[(xspot_p1[star_mask & inspot_mask].astype(int) + int(n)/2).astype(int), (yspot_p1[star_mask & inspot_mask].astype(int) + int(n)/2).astype(int)]/star_pixel_rad))
         #spot[(xspot_p1[star_mask & inspot_mask].astype(int) + int(n)/2).astype(int), (yspot_p1[star_mask & inspot_mask].astype(int) + int(n)/2).astype(int)] = (f_cold(lambdaa)/ np.max(photosHO[1][wave]))* (1-u1*(1-mu_spot)-u2*(1-mu_spot)**2.0)
@@ -289,10 +287,10 @@ def sage(params, planet_pixel_size,
         #plt.show()
         
         
-        total_flux = np.sum(star_grid[starmask])/ total_pixels
+        total_flux = np.sum(star_grid[starmask])/ total_pixels # normalised with the number of pixels. 
         bin_flux.append(total_flux)
         
-        resi = (star_spec/ total_flux)
+        resi = (star_spec/ total_flux) # a proof for this formula is available in the paper.
         contamination_factor.append(resi)
         
         if abs(lambdaa - plot_map_wavelength) <= 10:
