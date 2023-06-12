@@ -10,7 +10,7 @@ import astropy.units as u
 from astropy.coordinates.matrix_utilities import rotation_matrix # for stellar inclination
 
 
-
+# Change the coordinate system for latitude # TODO
 
 def sage(params, planet_pixel_size, 
          wavelength, flux_hot, flux_cold, 
@@ -49,8 +49,8 @@ def sage(params, planet_pixel_size,
         
     elif len(wavelength) >= 1:
         
-        f_hot = interp1d(wavelength, flux_hot, bounds_error = False, fill_value = 0.0)
-        f_cold = interp1d(wavelength, flux_cold, bounds_error = False, fill_value = 0.0)
+        f_hot = interp1d(wavelength, flux_hot, bounds_error = False, fill_value = 'extrapolate')
+        f_cold = interp1d(wavelength, flux_cold, bounds_error = False, fill_value = 'extrapolate')
         
     
     
@@ -115,7 +115,7 @@ def sage(params, planet_pixel_size,
     grid_new =  np.zeros((int(n),int(n)))
     grid_new[starmask_rad] = y2[starmask_rad] * (ve/ c)
     
-    #'''
+    '''
     #Plot for viewing the wavelength shift map
     fig = plt.figure(figsize = (9,7))
     gs = gridspec.GridSpec(1,1)
@@ -129,7 +129,7 @@ def sage(params, planet_pixel_size,
     ax0.set_ylabel('y (pixels)')
     plt.savefig('/Users/hritam/Documents/PhD/0. PhD_Papers_posters/Figures_inpaper/Figure_2/Dopplergram.pdf', dpi=300, bbox_inches='tight')
     plt.show()
-    #'''
+    '''
     
     starmask = (r <= star_pixel_rad)
     total_pixels = len(r[starmask])      # Inside the stellar radius
@@ -294,8 +294,7 @@ def sage(params, planet_pixel_size,
         contamination_factor.append(resi)
         
         if abs(lambdaa - plot_map_wavelength) <= 10:
-            star_map_out= star_grid
-      
+            star_map_out= star_grid      
     return bin_flux, stellar_spec, contamination_factor, star_map_out
 
 
@@ -326,15 +325,18 @@ def stellar_inc(active_cord, stellar_inclination= 0.0 * u.deg):
 
 
 def stellar_rotation(active_cord, phase):
-
-    '''
-    This function rotates the stellar grid with the axis of rotation set to y-axis. 
+    """This function rotates the stellar grid with the axis of rotation set to y-axis. 
     The observer is located at Z -> np.inf. 
 
-    Input: Cartesian coordinate of active regions (arr[x, y, z]) on the stellar grid. 
-    Rotation angle [in deg]
+    Args:
+        active_cord (array): Cartesian coordinates of active regions (arr[x, y, z]) on the stellar grid.
+        phase (integer): Rotational angle [in deg]
 
-    '''
+    Returns:
+        [float, float, float]: Rotated corrdinates of active regions. 
+    """
+
+
     rot= rotation_matrix(phase, 'y').T
     rotated_active_cord= np.dot(rot, active_cord)
     spx= rotated_active_cord[0][0]
