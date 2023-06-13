@@ -15,7 +15,7 @@ class sage_class:
                  flux_hot, flux_cold, 
                  spot_lat, spot_long, spot_size, ve, spotnumber, 
                  fit_ldc,
-                 plot_map_wavelength):
+                 plot_map_wavelength, phases_rot= 0):
         # Assing input variables to as attributes of the class.
         self.params= params
         self.planet_pixel_size= planet_pixel_size
@@ -29,9 +29,32 @@ class sage_class:
         self.spotnumber= spotnumber
         self.fit_ldc= fit_ldc
         self.plot_map_wavelength= plot_map_wavelength
+        self.phases_rot= phases_rot
+        
+    def rotate_star(self):
+        
+        if len(self.phases_rot) == 1:
+            self.phases_rot= self.phases_rot[0] # The 0 is there to take the first entry. 
+            print('No rotation')
+            lc, epsilon_wl, star_maps= self.StarSpotSpec()
+            
+        elif len(self.phases_rot) != 1:
+            print('Rotating the star')
+            lc= []
+            epsilon_wl= []
+            star_maps= []
+            for i, n in enumerate(self.phases_rot):
+                self.phases_rot= n
+                flux_norm, contamination_factor, star_map= self.StarSpotSpec()
+                lc.append(flux_norm)    
+                epsilon_wl.append(contamination_factor)
+                star_maps.append(star_map)                                
+        return lc, epsilon_wl, star_maps
+                
         
         
     def StarSpotSpec(self):
+        
         '''
         This function calculates the stellar contamination using a pixellation grid approach as presented in chakraborty et al. (in prep). 
         
@@ -44,11 +67,11 @@ class sage_class:
         '''
         
         N = 1000
-        midpoint = self.params[9]
-        start_time = ((self.params[4] + midpoint)  - 0.125)
-        end_time = ( (self.params[4] + midpoint) + 0.125)
+        midpoint = self.params[8]
+        start_time = ((self.params[3] + midpoint)  - 0.125)
+        end_time = ( (self.params[3] + midpoint) + 0.125)
         time_in_JD = np.linspace(start_time, end_time, N)
-        phase = np.mod((time_in_JD - midpoint)/ self.params[4]+0.5, 1)-0.5
+        phase = np.mod((time_in_JD - midpoint)/ self.params[3]+0.5, 1)-0.5
         
         if len(self.wavelength) == 1:
             print('A single binned flux value provided. I hope you are using a RF function')
@@ -58,7 +81,6 @@ class sage_class:
             flux_cold_interp= np.zeros(2) + self.flux_cold
             f_hot = interp1d(wave_interp, flux_hot_interp, bounds_error = False, fill_value = 0.0)
             f_cold = interp1d(wave_interp, flux_cold_interp, bounds_error = False, fill_value = 0.0)
-
             
         elif len(self.wavelength) >= 1:
             
@@ -66,21 +88,21 @@ class sage_class:
             f_cold = interp1d(self.wavelength, self.flux_cold, bounds_error = False, fill_value = 0.0)
         
         # Define input parameters:
-        phaseoff    = self.params[0]             	
-        radiusratio = self.params[1]				
-        incl        = self.params[2]			
-        semimajor   = self.params[3]		
-        per         = self.params[4]			
-        u1          = self.params[7]			
-        u2          = self.params[8]	
+        phaseoff= self.phases_rot
+        radiusratio = self.params[0]				
+        incl        = self.params[1]			
+        semimajor   = self.params[2]		
+        per         = self.params[3]			
+        u1          = self.params[6]			
+        u2          = self.params[7]	
         
-        mu_profile= self.params[10]
-        I_profile= self.params[11]
+        mu_profile= self.params[9]
+        I_profile= self.params[10]
 
-        inc_star= self.params[12]
+        inc_star= self.params[11]
         
-        ecc = self.params[5]
-        omega_rad = (np.pi * self.params[6]/180.)
+        ecc = self.params[4]
+        omega_rad = (np.pi * self.params[5]/180.)
         
         # Converting latitude to co-latitude
         spot_lat= 90 - np.asarray(self.spot_lat)
@@ -128,22 +150,6 @@ class sage_class:
         grid_new =  np.zeros((int(n),int(n)))
         grid_new[starmask_rad] = y2[starmask_rad] * (self.ve/ c)
         
-        '''
-        #Plot for viewing the wavelength shift map
-        fig = plt.figure(figsize = (9,7))
-        gs = gridspec.GridSpec(1,1)
-
-        ax0=plt.subplot(gs[0,0])
-        img= ax0.imshow((grid_new).T, cmap = cm.seismic, origin = 'lower')
-
-        cbar = plt.colorbar(img, ax= ax0)
-        cbar.set_label(r'$\dfrac{\Delta \lambda}{\lambda}$')
-        ax0.set_xlabel('x (pixels)')
-        ax0.set_ylabel('y (pixels)')
-        plt.savefig('/Users/hritam/Documents/PhD/0. PhD_Papers_posters/Figures_inpaper/Figure_2/Dopplergram.pdf', dpi=300, bbox_inches='tight')
-        plt.show()
-        '''
-        
         starmask = (r <= star_pixel_rad)
         total_pixels = len(r[starmask])      # Inside the stellar radius
         
@@ -157,8 +163,8 @@ class sage_class:
             u1= np.zeros(len(self.wavelength))
             u2= np.zeros(len(self.wavelength))        
         elif self.fit_ldc == 'multi-color':
-            u1= np.zeros(len(self.wavelength)) + self.params[7]
-            u2= np.zeros(len(self.wavelength)) + self.params[8]               
+            u1= np.zeros(len(self.wavelength)) + self.params[6]
+            u2= np.zeros(len(self.wavelength)) + self.params[7]               
         elif self.fit_ldc == 'intensity_profile':
             I_interpolated= interp1d(mu_profile[0], I_profile, bounds_error = False, fill_value = 0.0, axis=1)
             
@@ -295,8 +301,14 @@ class sage_class:
             contamination_factor.append(resi)
             
             if abs(lambdaa - self.plot_map_wavelength) <= 10:
-                star_map_out= star_grid      
-        return bin_flux, stellar_spec, contamination_factor, star_map_out
+                star_map_out= star_grid     
+        
+        # calculating drop in stellar flux due to active regions.
+        spotted_flux= np.sum(bin_flux)
+        unspotted_flux= np.sum(stellar_spec)
+        flux_norm= spotted_flux/ unspotted_flux
+                         
+        return flux_norm, contamination_factor, star_map_out
 
 def stellar_inc(active_cord, stellar_inclination= 0.0 * u.deg):
 
