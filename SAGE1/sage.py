@@ -66,15 +66,8 @@ class sage_class:
         
         '''
         
-        N = 1000
-        midpoint = self.params[8]
-        start_time = ((self.params[3] + midpoint)  - 0.125)
-        end_time = ( (self.params[3] + midpoint) + 0.125)
-        time_in_JD = np.linspace(start_time, end_time, N)
-        phase = np.mod((time_in_JD - midpoint)/ self.params[3]+0.5, 1)-0.5
-        
         if len(self.wavelength) == 1:
-            print('A single binned flux value provided. I hope you are using a RF function')
+            print('A single binned flux value provided. I hope you are using a RF')
             
             wave_interp= np.zeros(2) + self.wavelength
             flux_hot_interp= np.zeros(2) + self.flux_hot
@@ -87,22 +80,22 @@ class sage_class:
             f_hot = interp1d(self.wavelength, self.flux_hot, bounds_error = False, fill_value = 0.0)
             f_cold = interp1d(self.wavelength, self.flux_cold, bounds_error = False, fill_value = 0.0)
         
-        # Define input parameters:
+        # The input parameters for grid:
+        
+        # for rotation phases
         phaseoff= self.phases_rot
-        radiusratio = self.params[0]				
-        incl        = self.params[1]			
-        semimajor   = self.params[2]		
-        per         = self.params[3]			
-        u1          = self.params[6]			
-        u2          = self.params[7]	
+        # for grid-size
+        radiusratio = self.params[0]						
+        semimajor   = self.params[1]		
+        # for limb-darkening
+        u1          = self.params[2]			
+        u2          = self.params[3]	
         
-        mu_profile= self.params[9]
-        I_profile= self.params[10]
-
-        inc_star= self.params[11]
+        mu_profile= self.params[4]
+        I_profile= self.params[5]
+        # for stellar inclination
+        inc_star= self.params[6]
         
-        ecc = self.params[4]
-        omega_rad = (np.pi * self.params[5]/180.)
         
         # Converting latitude to co-latitude
         spot_lat= 90 - np.asarray(self.spot_lat)
@@ -115,21 +108,6 @@ class sage_class:
         # Creates a grid wich is twice the size of the planets' size in pixels * ratio of rs/rp
         n = (2.0*self.planet_pixel_size*(rs/rp) + 2.0*self.planet_pixel_size)
         grid = np.zeros((int(n),int(n)))
-        
-        
-        # Conversion for inclination value: degrees to radians
-        inclination_rad = (incl/180.)*(np.pi)
-
-        # Finds the planets' impact parameter (= needed to find y coordinate on grid = planet_y)
-        impactparam = semimajor * np.cos(inclination_rad) * ((1-ecc**2.)/(1+ecc*np.sin(omega_rad)))
-
-        # Checks if planet eclipses star:
-        if (impactparam > (1.0+(rp/rs))):
-            delta_flux = np.zeros(np.size(phase))+1
-            return(delta_flux)
-
-        # Find y-coordinate of planet on star: (ypos of center of planet on grid)
-        planet_y = ((impactparam)/(1.0+(rp/rs))) * ((self.planet_pixel_size*(rs/rp)) + self.planet_pixel_size)
         
         star_pixel_rad = ((rs/rp) * self.planet_pixel_size)
         
@@ -163,8 +141,8 @@ class sage_class:
             u1= np.zeros(len(self.wavelength))
             u2= np.zeros(len(self.wavelength))        
         elif self.fit_ldc == 'multi-color':
-            u1= np.zeros(len(self.wavelength)) + self.params[6]
-            u2= np.zeros(len(self.wavelength)) + self.params[7]               
+            u1= np.zeros(len(self.wavelength)) + self.params[2]
+            u2= np.zeros(len(self.wavelength)) + self.params[3]               
         elif self.fit_ldc == 'intensity_profile':
             I_interpolated= interp1d(mu_profile[0], I_profile, bounds_error = False, fill_value = 0.0, axis=1)
             
@@ -213,11 +191,11 @@ class sage_class:
                     spz = star_pixel_rad * np.cos(spotlong_rad) * np.sin(spotlat_rad)
 
                     spot_inCart= np.array([[spx], [spy], [spz]])
-                    spx, spy, spz= stellar_rotation(active_cord= spot_inCart, phase=phaseoff)
+                    spx, spy, spz= stellar_rotation(active_cord= spot_inCart, phase=phaseoff) # for stellar rotation
                     
                     # Adding stellar inclination effects
                     spot_inCart= np.array([[spx], [spy], [spz]])
-                    spx, spy, spz= stellar_inc(stellar_inclination= (90 - inc_star)*u.deg, active_cord=spot_inCart) # the new stellar inclination part
+                    spx, spy, spz= stellar_inc(stellar_inclination= (90 - inc_star)*u.deg, active_cord=spot_inCart) # for stellar inclination
 
 
                     # Converting rotated Cartesian pixels back to GCS. 
