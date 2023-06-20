@@ -8,7 +8,6 @@ from scipy.interpolate import interp1d
 import astropy.units as u
 from astropy.coordinates.matrix_utilities import rotation_matrix # for stellar inclination
 
-
 class sage_class:
     
     def __init__(self, params, planet_pixel_size, wavelength,
@@ -67,8 +66,6 @@ class sage_class:
         '''
         
         if len(self.wavelength) == 1:
-            print('A single binned flux value provided. I hope you are using a RF')
-            
             wave_interp= np.zeros(2) + self.wavelength
             flux_hot_interp= np.zeros(2) + self.flux_hot
             flux_cold_interp= np.zeros(2) + self.flux_cold

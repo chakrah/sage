@@ -1,0 +1,6 @@
+# Ignoring following files#
+__pycache__/
+build/
+.DS_Store
+/SAGE1/__pycache__/
+
